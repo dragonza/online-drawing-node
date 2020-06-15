@@ -1,8 +1,40 @@
 body {
-  padding: 50px;
-  font: 14px "Lucida Grande", Helvetica, Arial, sans-serif;
+  margin: 0;
+  padding: 0;
 }
 
-a {
-  color: #00B7FF;
+.container {
+  display: flex;
+}
+
+
+.inputs {
+  display: flex;
+  flex-direction: column;
+}
+.settings {
+  background: #000;
+  display: flex;
+  justify-content: space-between;
+  flex-direction: column;
+  padding: 10px;
+  box-shadow: 0 0 13px grey;
+  z-index: 1;
+}
+
+input {
+  width: 40px;
+}
+
+.stroke {
+  margin-top: 15px;
+  width: 40px;
+}
+
+.clear {
+  color: #fff;
+  outline: none;
+  background: none;
+  border: 0;
+  cursor: pointer;
 }
