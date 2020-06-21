@@ -3,7 +3,12 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "start": "nodemon app.js"
+    "start": "nodemon app.js",
+    "build": "node app.js"
+  },
+  "engines": {
+    "node": "12.16.3",
+    "npm": " 6.4.1"
   },
   "dependencies": {
     "express": "~4.17.1",
