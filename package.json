@@ -3,8 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "start": "nodemon app.js",
-    "build": "node app.js"
+    "start": "nodemon app.js"
   },
   "engines": {
     "node": "12.16.3",
