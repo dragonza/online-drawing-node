@@ -1,7 +1,7 @@
 var express = require("express");
 var app = express();
 var path = require("path");
-
+const PORT = process.env.port || 3000;
 const http = require("http").createServer(app);
 const io = require("socket.io").listen(http);
 
@@ -27,6 +27,6 @@ io.on("connection", (socket) => {
   });
 });
 
-http.listen(3000, () => {
+http.listen(PORT, () => {
   console.log("listening on http://localhost:3000");
 });
