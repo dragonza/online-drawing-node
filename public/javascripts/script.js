@@ -1,6 +1,4 @@
 window.onload = function () {
-  console.log("ello");
-
   if (!("getContext" in document.createElement("canvas"))) {
     alert("Sorry, it looks like your browser does not support canvas!");
     return false;
@@ -13,53 +11,19 @@ window.onload = function () {
   const socket = io(url);
 
   const clients = {};
-  const cursors = {};
   const prev = {};
 
   let isDrawing = false;
-  socket.on("moving", function (data) {
-    if (!(data.id in clients)) {
-      // a new user has come online. create a cursor for them
-      console.log("csc", $('<div class="cursor">').appendTo("#cursors"));
-      const newCursor = document.createElement("div");
-      newCursor.classList.add = "cursor";
-      console.log("newCursor", newCursor);
-      cursors[data.id] = $('<div class="cursor">').appendTo("#cursors");
-      console.log(cursors);
-    }
-
-    // Move the mouse pointer
-    cursors[data.id].css({
-      left: data.x,
-      top: data.y,
-    });
-
-    // Is the user drawing?
-    if (data.isDrawing && clients[data.id]) {
-      // Draw a line on the canvas. clients[data.id] holds
-      // the previous position of this user's mouse pointer
-      console.log("clients", JSON.stringify(clients, null, 2));
-      console.log("data transmitted", data);
-
-      draw({
-        fromX: clients[data.id].x,
-        fromY: clients[data.id].y,
-        toX: data.x,
-        toY: data.y,
-        strokeStyle: data.strokeStyle,
-        lineWidth: data.lineWidth,
-      });
-    }
-
-    // Saving the current client state
-    clients[data.id] = data;
-    clients[data.id].updated = Date.now();
-  });
 
   const colorPicker = document.querySelector(".color-picker");
   const stroke = document.querySelector(".stroke");
   const clear = document.querySelector(".clear");
   const ctx = canvas.getContext("2d");
+
+  const currentSettings = {
+    strokeStyle: "black",
+    lineWidth: 7,
+  };
 
   const sideBarWidth = document.querySelector(".settings").offsetWidth;
 
@@ -73,10 +37,12 @@ window.onload = function () {
   ctx.strokeStyle = "black";
 
   colorPicker.addEventListener("change", (e) => {
+    currentSettings.strokeStyle = e.target.value;
     ctx.strokeStyle = e.target.value;
   });
 
   stroke.addEventListener("change", (e) => {
+    currentSettings.lineWidth = e.target.value;
     ctx.lineWidth = e.target.value;
   });
 
@@ -103,21 +69,19 @@ window.onload = function () {
   canvas.addEventListener("mousemove", (e) => {
     if (Date.now() - lastEmit > 30) {
       socket.emit("mousemove", {
+        id: id,
         x: e.offsetX,
         y: e.offsetY,
-        strokeStyle: ctx.strokeStyle,
-        lineWidth: ctx.lineWidth,
-        isDrawing,
-        id: id,
+        settings: {
+          strokeStyle: currentSettings.strokeStyle,
+          lineWidth: currentSettings.lineWidth,
+          isDrawing,
+        },
       });
       lastEmit = Date.now();
     }
 
     if (isDrawing) {
-      console.log("e.pageX", e.pageX);
-      console.log("e.pageX", e.pageY);
-      console.log("isDrawing", isDrawing);
-
       draw({
         fromX: prev.x,
         fromY: prev.y,
@@ -135,4 +99,59 @@ window.onload = function () {
 
   canvas.addEventListener("mouseup", () => (isDrawing = false));
   canvas.addEventListener("mouseout", () => (isDrawing = false));
+  socket.emit("newUser", { id });
+
+  socket.on("disconnected", (id) => {
+    const cursor = document.getElementById(id);
+    if (!cursor) return;
+    cursor.remove();
+  });
+
+  socket.on("moving", function (data) {
+    let newCursor;
+    if (!(data.id in clients)) {
+      // a new user has come online. create a cursor for them
+      const cursors = document.querySelector("#cursors");
+      newCursor = document.createElement("div");
+      newCursor.classList.add("cursor");
+      newCursor.setAttribute("id", data.id);
+
+      cursors[data.id] = newCursor.innerHTML;
+      cursors.appendChild(newCursor);
+    }
+
+    const cursor = document.getElementById(data.id);
+    console.log("data.settings.strokeStyle", data.settings.lineWidth);
+    cursor.style.left = `${data.x + sideBarWidth}px`;
+    cursor.style.top = `${data.y}px`;
+    cursor.style.position = "absolute";
+    cursor.style.width = data.settings.lineWidth + "px";
+    cursor.style.height = data.settings.lineWidth + "px";
+    cursor.style.background = "orange";
+    cursor.style.borderRadius = "50%";
+    cursor.style.transform = "translate(-50%, -50%)";
+
+    // Is the user drawing?
+    if (data.settings.isDrawing && clients[data.id]) {
+      // Draw a line on the canvas. clients[data.id] holds
+      // the previous position of this user's mouse pointer
+
+      draw({
+        fromX: clients[data.id].x,
+        fromY: clients[data.id].y,
+        toX: data.x,
+        toY: data.y,
+        strokeStyle: data.settings.strokeStyle,
+        lineWidth: data.settings.lineWidth,
+      });
+
+      // reset the settings to its active current user
+      ctx.strokeStyle = currentSettings.strokeStyle;
+      ctx.lineWidth = currentSettings.lineWidth;
+    }
+
+    // Saving the current client state
+    clients[data.id] = data;
+    clients[data.id].updated = Date.now();
+  });
 };

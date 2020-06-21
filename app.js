@@ -6,17 +6,24 @@ const http = require("http").createServer(app);
 const io = require("socket.io").listen(http);
 
 app.use(express.static(path.join(__dirname, "public")));
-
+let onlineUsers = [];
 io.on("connection", (socket) => {
-  console.log("a user connected");
+  let currentUser = "";
+  socket.on("newUser", function ({ id }) {
+    currentUser = id;
+    onlineUsers.push(id);
+    console.log(currentUser + " connected");
+  });
+
   socket.on("mousemove", function (data) {
-    console.log("data", data);
     // This line sends the event (broadcasts it)
     // to everyone except the originating client.
     socket.broadcast.emit("moving", data);
   });
   socket.on("disconnect", () => {
-    console.log("user disconnected");
+    onlineUsers = onlineUsers.filter((id) => id !== currentUser);
+    console.log(currentUser + " disconnected");
+    socket.broadcast.emit("disconnected", currentUser);
   });
 });
 
